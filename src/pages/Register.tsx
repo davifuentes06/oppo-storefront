@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ const Register = () => {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const passwordRequirements = [
     { label: 'Mínimo 8 caracteres', met: password.length >= 8 },
@@ -46,12 +47,12 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/register', {
+      const response = await fetch('http://localhost:3000/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ username: name, email, password }),
       });
 
       const data = await response.json();
@@ -61,10 +62,11 @@ const Register = () => {
           title: 'Cuenta creada',
           description: 'Tu cuenta ha sido creada exitosamente.',
         });
+        navigate('/productos');
       } else {
         toast({
           title: 'Error',
-          description: data.message || 'No se pudo crear la cuenta.',
+          description: data.error || 'No se pudo crear la cuenta.',
           variant: 'destructive',
         });
       }
