@@ -16,14 +16,38 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login
-    setTimeout(() => {
-      toast({
-        title: 'Inicio de sesión',
-        description: 'Funcionalidad de login próximamente disponible.',
+    try {
+      const response = await fetch('http://localhost:3000/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: 'Inicio de sesión exitoso',
+          description: 'Bienvenido de nuevo.',
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: data.message || 'Credenciales incorrectas.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error de conexión',
+        description: 'No se pudo conectar con el servidor.',
+        variant: 'destructive',
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
