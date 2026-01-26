@@ -21,10 +21,10 @@ const Hero = () => {
               <span className="text-sm font-medium text-primary">Nuevo lanzamiento</span>
             </div>
 
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight mb-6">
-              <span className="text-gradient">OPPO</span> Find X7
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6">
+              <span className="text-gradient">OPPO</span> <span className="text-white">Find X7</span>
               <br />
-              <span className="text-muted-foreground">Ultra</span>
+              <span className="text-white/60">Ultra</span>
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground max-w-xl mb-8 mx-auto lg:mx-0">
