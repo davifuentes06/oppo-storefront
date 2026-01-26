@@ -45,14 +45,38 @@ const Register = () => {
 
     setIsLoading(true);
 
-    // Simulate registration
-    setTimeout(() => {
-      toast({
-        title: 'Registro',
-        description: 'Funcionalidad de registro próximamente disponible.',
+    try {
+      const response = await fetch('http://localhost:3000/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
       });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: 'Cuenta creada',
+          description: 'Tu cuenta ha sido creada exitosamente.',
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: data.message || 'No se pudo crear la cuenta.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error de conexión',
+        description: 'No se pudo conectar con el servidor.',
+        variant: 'destructive',
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
