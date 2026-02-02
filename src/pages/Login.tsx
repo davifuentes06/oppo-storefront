@@ -4,6 +4,7 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { API_ENDPOINTS } from '@/config/api';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -18,7 +19,7 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://programacion-iii-seccion-3.onrender.com/api/login', {
+      const response = await fetch(API_ENDPOINTS.LOGIN, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -29,11 +30,22 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
+        // Almacenar información del usuario
+        localStorage.setItem('userToken', data.token);
+        localStorage.setItem('userData', JSON.stringify(data.user));
+        localStorage.setItem('isAdmin', data.user.tipo === 'admin' ? 'true' : 'false');
+        
         toast({
           title: 'Inicio de sesión exitoso',
-          description: 'Bienvenido de nuevo.',
+          description: `Bienvenido ${data.user.username}.`,
         });
-        navigate('/productos');
+        
+        // Redirigir según el tipo de usuario
+        if (data.user.tipo === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/productos');
+        }
       } else {
         toast({
           title: 'Error',

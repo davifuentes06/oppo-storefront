@@ -26,16 +26,38 @@ Para ejecutar este proyecto en tu máquina local, sigue estos pasos:
    npm install
    ```
 
-3. **Ejecutar el servidor de desarrollo**:
+3. **Configurar variables de entorno**:
+
+   Copia el archivo `.env.example` a `.env` y ajusta las variables según tu entorno:
+
+   ```sh
+   cp .env.example .env
+   ```
+
+   Para desarrollo local, el archivo `.env` debe contener:
+   ```
+   VITE_API_BASE_URL=http://localhost:3000
+   ```
+
+4. **Ejecutar el servidor de desarrollo**:
 
    ```sh
    npm run dev
    ```
 
-4. **Abrir en el navegador**:
+5. **Abrir en el navegador**:
    Visita `http://localhost:8080` (o el puerto indicado en la terminal).
+
+## Variables de Entorno
+
+La aplicación utiliza las siguientes variables de entorno:
+
+- `VITE_API_BASE_URL`: URL base de la API del backend
+  - **Desarrollo**: `http://localhost:3000`
+  - **Producción**: `https://programacion-iii-seccion-3.onrender.com`
 
 ## Backend
 
-La aplicación se conecta a un backend servido en:
-`https://programacion-iii-seccion-3.onrender.com`
+La aplicación se conecta a un backend que puede ejecutarse en:
+- **Desarrollo**: `http://localhost:3000`
+- **Producción**: `https://programacion-iii-seccion-3.onrender.com`

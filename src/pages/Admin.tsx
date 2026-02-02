@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { Package, Search, Plus, Trash2, Eye } from 'lucide-react';
+import { API_ENDPOINTS } from '@/config/api';
 
 interface AdminProduct {
   id: string;
@@ -18,6 +19,10 @@ interface AdminProduct {
   nombre: string;
   precio: number;
   descripcion: string;
+  imagen?: string;
+  categoria: string;
+  stock: number;
+  activo: boolean;
   createdAt: string;
 }
 
@@ -35,6 +40,8 @@ const Admin = () => {
     codigo: '',
     precio: '',
     descripcion: '',
+    categoria: 'smartphone',
+    stock: '0',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -52,20 +59,30 @@ const Admin = () => {
     }
     setIsAdmin(true);
     
-    // Load products from localStorage
+    // Load products from API
     loadProducts();
   }, [navigate, toast]);
 
-  const loadProducts = () => {
-    const storedProducts = localStorage.getItem('adminProducts');
-    if (storedProducts) {
-      setProducts(JSON.parse(storedProducts));
+  const loadProducts = async () => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.BASE_URL}/api/products`);
+      if (response.ok) {
+        const data = await response.json();
+        setProducts(data);
+      } else {
+        toast({
+          title: 'Error',
+          description: 'No se pudieron cargar los productos.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error de conexión',
+        description: 'No se pudo conectar con el servidor.',
+        variant: 'destructive',
+      });
     }
-  };
-
-  const saveProducts = (newProducts: AdminProduct[]) => {
-    localStorage.setItem('adminProducts', JSON.stringify(newProducts));
-    setProducts(newProducts);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -73,7 +90,7 @@ const Admin = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -88,41 +105,59 @@ const Admin = () => {
       return;
     }
 
-    // Check if code already exists
-    const codeExists = products.some(p => p.codigo.toLowerCase() === formData.codigo.toLowerCase());
-    if (codeExists) {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.BASE_URL}/api/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          codigo: formData.codigo,
+          nombre: formData.nombre,
+          precio: formData.precio,
+          descripcion: formData.descripcion,
+          categoria: formData.categoria,
+          stock: formData.stock,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: 'Producto creado',
+          description: `${data.nombre} ha sido añadido correctamente.`,
+        });
+
+        // Reset form and reload products
+        setFormData({ 
+          nombre: '', 
+          codigo: '', 
+          precio: '', 
+          descripcion: '', 
+          categoria: 'smartphone', 
+          stock: '0' 
+        });
+        loadProducts();
+      } else {
+        toast({
+          title: 'Error',
+          description: data.error || 'No se pudo crear el producto.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Ya existe un producto con ese código.',
+        title: 'Error de conexión',
+        description: 'No se pudo conectar con el servidor.',
         variant: 'destructive',
       });
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    const newProduct: AdminProduct = {
-      id: crypto.randomUUID(),
-      nombre: formData.nombre,
-      codigo: formData.codigo.toUpperCase(),
-      precio: parseFloat(formData.precio),
-      descripcion: formData.descripcion,
-      createdAt: new Date().toISOString(),
-    };
-
-    const updatedProducts = [...products, newProduct];
-    saveProducts(updatedProducts);
-
-    toast({
-      title: 'Producto creado',
-      description: `${newProduct.nombre} ha sido añadido correctamente.`,
-    });
-
-    // Reset form
-    setFormData({ nombre: '', codigo: '', precio: '', descripcion: '' });
-    setIsSubmitting(false);
   };
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!searchCode.trim()) {
       toast({
         title: 'Error',
@@ -132,28 +167,60 @@ const Admin = () => {
       return;
     }
 
-    const product = products.find(p => p.codigo.toLowerCase() === searchCode.toLowerCase());
-    if (product) {
-      setFoundProduct(product);
-    } else {
-      setFoundProduct(null);
+    try {
+      const response = await fetch(`${API_ENDPOINTS.BASE_URL}/api/products/search/${searchCode.trim()}`);
+      
+      if (response.ok) {
+        const product = await response.json();
+        setFoundProduct(product);
+      } else {
+        setFoundProduct(null);
+        toast({
+          title: 'No encontrado',
+          description: 'No existe un producto con ese código.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
       toast({
-        title: 'No encontrado',
-        description: 'No existe un producto con ese código.',
+        title: 'Error de conexión',
+        description: 'No se pudo conectar con el servidor.',
         variant: 'destructive',
       });
     }
   };
 
-  const handleDelete = (id: string) => {
-    const updatedProducts = products.filter(p => p.id !== id);
-    saveProducts(updatedProducts);
-    toast({
-      title: 'Producto eliminado',
-      description: 'El producto ha sido eliminado correctamente.',
-    });
-    if (foundProduct?.id === id) {
-      setFoundProduct(null);
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.BASE_URL}/api/products/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'Producto eliminado',
+          description: 'El producto ha sido eliminado correctamente.',
+        });
+        
+        if (foundProduct?.id === id) {
+          setFoundProduct(null);
+        }
+        
+        loadProducts();
+      } else {
+        const data = await response.json();
+        toast({
+          title: 'Error',
+          description: data.error || 'No se pudo eliminar el producto.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error de conexión',
+        description: 'No se pudo conectar con el servidor.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -240,6 +307,35 @@ const Admin = () => {
                           className="bg-secondary border-border"
                         />
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="categoria">Categoría</Label>
+                        <select
+                          id="categoria"
+                          name="categoria"
+                          value={formData.categoria}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-secondary border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="smartphone">Smartphone</option>
+                          <option value="find">Find Series</option>
+                          <option value="reno">Reno Series</option>
+                          <option value="a-series">A Series</option>
+                          <option value="flagship">Flagship</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="stock">Stock</Label>
+                        <Input
+                          id="stock"
+                          name="stock"
+                          type="number"
+                          min="0"
+                          placeholder="Ej: 50"
+                          value={formData.stock}
+                          onChange={handleInputChange}
+                          className="bg-secondary border-border"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="descripcion">Descripción</Label>
@@ -285,6 +381,8 @@ const Admin = () => {
                             <TableHead>Código</TableHead>
                             <TableHead>Nombre</TableHead>
                             <TableHead>Precio</TableHead>
+                            <TableHead>Categoría</TableHead>
+                            <TableHead>Stock</TableHead>
                             <TableHead>Descripción</TableHead>
                             <TableHead className="text-right">Acciones</TableHead>
                           </TableRow>
@@ -295,6 +393,8 @@ const Admin = () => {
                               <TableCell className="font-mono text-primary">{product.codigo}</TableCell>
                               <TableCell className="font-medium">{product.nombre}</TableCell>
                               <TableCell>{formatPrice(product.precio)}</TableCell>
+                              <TableCell className="capitalize">{product.categoria}</TableCell>
+                              <TableCell>{product.stock}</TableCell>
                               <TableCell className="max-w-xs truncate text-muted-foreground">
                                 {product.descripcion}
                               </TableCell>

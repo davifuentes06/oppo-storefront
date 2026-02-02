@@ -3,15 +3,75 @@ import { useSearchParams } from 'react-router-dom';
 import { Filter, Grid3X3, List, SlidersHorizontal } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import ProductCard from '@/components/ProductCard';
+import AdminProductCard from '@/components/AdminProductCard';
 import { Button } from '@/components/ui/button';
-import { products, categories } from '@/data/products';
+import { useToast } from '@/hooks/use-toast';
+import { API_ENDPOINTS } from '@/config/api';
+
+interface Product {
+  id: string;
+  codigo: string;
+  nombre: string;
+  precio: number;
+  descripcion: string;
+  imagen?: string;
+  categoria: string;
+  stock: number;
+  activo: boolean;
+  createdAt: string;
+}
+
+const categories = [
+  { id: "all", name: "Todos", description: "Ver todos los productos" },
+  { id: "find", name: "Find Series", description: "Fotografía profesional" },
+  { id: "reno", name: "Reno Series", description: "Diseño y estilo" },
+  { id: "a-series", name: "A Series", description: "Calidad accesible" },
+  { id: "flagship", name: "Flagship", description: "Lo mejor de OPPO" },
+  { id: "smartphone", name: "Smartphones", description: "Dispositivos móviles" },
+];
 
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('featured');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const category = searchParams.get('category');
+    if (category) {
+      setSelectedCategory(category);
+    }
+    loadProducts();
+  }, [searchParams]);
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(API_ENDPOINTS.PRODUCTS);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setProducts(data);
+      } else {
+        toast({
+          title: 'Error',
+          description: 'No se pudieron cargar los productos.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error de conexión',
+        description: 'No se pudo conectar con el servidor.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const category = searchParams.get('category');
@@ -33,19 +93,19 @@ const Products = () => {
   const filteredProducts = products
     .filter(product => {
       if (selectedCategory === 'all') return true;
-      return product.category === selectedCategory;
+      return product.categoria === selectedCategory;
     })
     .filter(product => {
-      return product.price >= priceRange[0] && product.price <= priceRange[1];
+      return product.precio >= priceRange[0] && product.precio <= priceRange[1];
     })
     .sort((a, b) => {
       switch (sortBy) {
         case 'price-asc':
-          return a.price - b.price;
+          return a.precio - b.precio;
         case 'price-desc':
-          return b.price - a.price;
+          return b.precio - a.precio;
         case 'name':
-          return a.name.localeCompare(b.name);
+          return a.nombre.localeCompare(b.nombre);
         default:
           return 0;
       }
@@ -108,10 +168,19 @@ const Products = () => {
           </p>
 
           {/* Products Grid */}
-          {filteredProducts.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-16">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-secondary flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">
+                Cargando productos...
+              </h3>
+            </div>
+          ) : filteredProducts.length > 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
+                <AdminProductCard key={product.id} product={product} />
               ))}
             </div>
           ) : (
@@ -123,7 +192,10 @@ const Products = () => {
                 No se encontraron productos
               </h3>
               <p className="text-muted-foreground">
-                Intenta ajustar los filtros para encontrar lo que buscas
+                {products.length === 0 
+                  ? 'No hay productos disponibles. Los administradores pueden agregar productos desde el panel de administración.'
+                  : 'Intenta ajustar los filtros para encontrar lo que buscas'
+                }
               </p>
             </div>
           )}

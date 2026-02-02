@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Check } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Check, Shield, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { API_ENDPOINTS } from '@/config/api';
 
 const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [tipo, setTipo] = useState('cliente');
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,22 +49,32 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://programacion-iii-seccion-3.onrender.com/api/register', {
+      const response = await fetch(API_ENDPOINTS.REGISTER, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username: name, email, password }),
+        body: JSON.stringify({ username: name, email, password, tipo }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
+        // Almacenar información del usuario
+        localStorage.setItem('userData', JSON.stringify(data));
+        localStorage.setItem('isAdmin', data.tipo === 'admin' ? 'true' : 'false');
+        
         toast({
           title: 'Cuenta creada',
-          description: 'Tu cuenta ha sido creada exitosamente.',
+          description: `Tu cuenta ${data.tipo} ha sido creada exitosamente.`,
         });
-        navigate('/productos');
+        
+        // Redirigir según el tipo de usuario
+        if (data.tipo === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/productos');
+        }
       } else {
         toast({
           title: 'Error',
@@ -140,6 +152,49 @@ const Register = () => {
                   className="pl-12 h-12 bg-secondary border-border focus:border-primary"
                   required
                 />
+              </div>
+            </div>
+
+            {/* Tipo de Usuario */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground">
+                Tipo de cuenta
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setTipo('cliente')}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    tipo === 'cliente'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border bg-secondary hover:border-primary/50'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <Users className="w-6 h-6 text-primary" />
+                    <span className="font-medium text-sm">Cliente</span>
+                    <span className="text-xs text-muted-foreground text-center">
+                      Comprar productos
+                    </span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTipo('admin')}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    tipo === 'admin'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border bg-secondary hover:border-primary/50'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <Shield className="w-6 h-6 text-primary" />
+                    <span className="font-medium text-sm">Admin</span>
+                    <span className="text-xs text-muted-foreground text-center">
+                      Gestionar tienda
+                    </span>
+                  </div>
+                </button>
               </div>
             </div>
 
