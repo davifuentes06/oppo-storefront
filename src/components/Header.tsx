@@ -1,13 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, Search } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Search, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { totalItems } = useCart();
   const location = useLocation();
+
+  useEffect(() => {
+    const checkAdmin = () => {
+      const adminStatus = localStorage.getItem('isAdmin');
+      setIsAdmin(adminStatus === 'true');
+    };
+    
+    checkAdmin();
+    window.addEventListener('storage', checkAdmin);
+    
+    // Check on route change too
+    const interval = setInterval(checkAdmin, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', checkAdmin);
+      clearInterval(interval);
+    };
+  }, [location]);
 
   const navLinks = [
     { name: 'Inicio', path: '/' },
@@ -62,6 +81,15 @@ const Header = () => {
               )}
             </Link>
 
+            {isAdmin && (
+              <Link to="/admin">
+                <Button variant="ghost" size="sm" className="hidden sm:flex gap-2 text-primary hover:text-primary">
+                  <Shield className="w-4 h-4" />
+                  <span>Admin</span>
+                </Button>
+              </Link>
+            )}
+
             <Link to="/login">
               <Button variant="ghost" size="sm" className="hidden sm:flex gap-2 text-muted-foreground hover:text-foreground">
                 <User className="w-4 h-4" />
@@ -97,6 +125,16 @@ const Header = () => {
                   {link.name}
                 </Link>
               ))}
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="px-4 py-3 rounded-lg text-sm font-medium text-primary hover:bg-primary/10 flex items-center gap-2"
+                >
+                  <Shield className="w-4 h-4" />
+                  Panel Admin
+                </Link>
+              )}
               <Link
                 to="/login"
                 onClick={() => setIsMenuOpen(false)}
